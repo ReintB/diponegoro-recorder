@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diponegoro Recorder - Learnsocial Helper</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.all.min.js"></script>
+</head>
+<body>
+
+    <div class="card">
+        <h1>🎙️ Diponegoro Recorder</h1>
+        <p class="subtitle">Alat bantu tugas speaking Learnsocial</p>
+        
+        <div class="timer" id="timer">00:00</div>
+        
+        <div class="volume-meter">
+            <div class="volume-fill" id="volumeFill"></div>
+        </div>
+
+        <div class="status-badge" id="status">Siap Merekam</div>
+
+        <div class="controls">
+            <button id="startBtn">Mulai Rekam</button>
+            <button id="stopBtn" disabled>Berhenti</button>
+            <button id="resetBtn" disabled>Ulangi</button>
+        </div>
+
+        <div class="download-area" id="resultArea" style="display: none;">
+            <p class="preview-label">Dengarkan Kembali:</p>
+            <audio id="audioPreview" controls></audio>
+            <br>
+            <a id="downloadLink" class="btn-download">Unduh File MP3</a>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
