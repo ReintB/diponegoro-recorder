@@ -41,7 +41,7 @@ startBtn.onclick = async () => {
     try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
-        
+
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
         input = audioContext.createMediaStreamSource(stream);
@@ -80,7 +80,7 @@ stopBtn.onclick = () => {
 
     const blob = new Blob(mp3Data, { type: 'audio/mp3' });
     const url = URL.createObjectURL(blob);
-    
+
     audioPreview.src = url;
     downloadLink.href = url;
     downloadLink.download = `Tugas_Speaking_${new Date().getTime()}.mp3`;
@@ -88,17 +88,29 @@ stopBtn.onclick = () => {
     stream.getTracks().forEach(track => track.stop());
     processor.disconnect();
     input.disconnect();
-    
+
     toggleButtons('finished');
 };
 
 resetBtn.onclick = () => {
-    if (confirm("Hapus rekaman ini dan mengulang?")) {
-        toggleButtons('ready');
-        timerDisplay.innerText = "00:00";
-        volumeFill.style.width = "0%";
-        audioPreview.src = "";
-    }
+    Swal.fire({
+        title: 'Konfirmasi Ulang',
+        text: "Apakah Anda yakin ingin menghapus rekaman ini dan mengulang dari awal?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#002147',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, Ulangi',
+        cancelButtonText: 'Batal',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            toggleButtons('ready');
+            timerDisplay.innerText = "00:00";
+            volumeFill.style.width = "0%";
+            audioPreview.src = "";
+        }
+    });
 };
 
 function toggleButtons(state) {

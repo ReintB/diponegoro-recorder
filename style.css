@@ -146,3 +146,47 @@ audio {
     text-decoration: none;
     font-weight: 700;
 }
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+
+    .card {
+        padding: 1.5rem 1rem;
+        border-radius: 16px;
+    }
+
+    .timer {
+        font-size: 2.5rem;
+    }
+
+    h1 {
+        font-size: 1.3rem;
+    }
+
+    .subtitle {
+        font-size: 0.75rem;
+    }
+
+    .controls {
+        gap: 8px;
+    }
+
+    button {
+        padding: 12px;
+        font-size: 0.85rem;
+    }
+
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 4px 12px;
+        margin-bottom: 20px;
+    }
+
+    .download-area {
+        margin-top: 20px;
+        padding-top: 15px;
+    }
+}
