@@ -93,24 +93,10 @@ stopBtn.onclick = () => {
 };
 
 resetBtn.onclick = () => {
-    Swal.fire({
-        title: 'Konfirmasi Ulang',
-        text: "Apakah Anda yakin ingin menghapus rekaman ini dan mengulang dari awal?",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#002147',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Ya, Ulangi',
-        cancelButtonText: 'Batal',
-        reverseButtons: true
-    }).then((result) => {
-        if (result.isConfirmed) {
-            toggleButtons('ready');
-            timerDisplay.innerText = "00:00";
-            volumeFill.style.width = "0%";
-            audioPreview.src = "";
-        }
-    });
+    toggleButtons('ready');
+    timerDisplay.innerText = "00:00";
+    volumeFill.style.width = "0%";
+    audioPreview.src = "";
 };
 
 function toggleButtons(state) {
