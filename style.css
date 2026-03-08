@@ -33,7 +33,7 @@ body {
     border-top: 10px solid var(--undip-blue);
 }
 
-h1 {
+.app-header h1 {
     color: var(--undip-blue);
     margin: 0;
     font-size: 1.6rem;
@@ -88,7 +88,7 @@ h1 {
     gap: 12px;
 }
 
-button {
+.btn {
     padding: 14px;
     border: none;
     border-radius: 12px;
@@ -98,38 +98,44 @@ button {
     font-size: 0.9rem;
 }
 
-#startBtn {
+.btn-start {
     background: var(--success);
     color: white;
     grid-column: span 2;
 }
 
-#stopBtn {
+.btn-stop {
     background: var(--danger);
     color: white;
 }
 
-#resetBtn {
+.btn-reset {
     background: #95a5a6;
     color: white;
 }
 
-button:disabled {
+.btn:disabled {
     background: #dfe6e9 !important;
     color: #b2bec3;
     cursor: not-allowed;
     transform: none !important;
 }
 
-button:hover:not(:disabled) {
+.btn:hover:not(:disabled) {
     filter: brightness(1.1);
     transform: translateY(-2px);
 }
 
-.download-area {
+.result-area {
     margin-top: 30px;
     padding-top: 20px;
     border-top: 2px solid #f8f9fa;
+}
+
+.preview-label {
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 10px;
 }
 
 audio {
@@ -145,9 +151,14 @@ audio {
     border-radius: 10px;
     text-decoration: none;
     font-weight: 700;
+    transition: all 0.2s ease;
 }
 
-/* --- Responsive Adjustments --- */
+.btn-download:hover {
+    filter: brightness(1.2);
+    transform: translateY(-2px);
+}
+
 @media (max-width: 480px) {
     body {
         padding: 10px;
@@ -162,7 +173,7 @@ audio {
         font-size: 2.5rem;
     }
 
-    h1 {
+    .app-header h1 {
         font-size: 1.3rem;
     }
 
@@ -174,7 +185,7 @@ audio {
         gap: 8px;
     }
 
-    button {
+    .btn {
         padding: 12px;
         font-size: 0.85rem;
     }
@@ -185,7 +196,7 @@ audio {
         margin-bottom: 20px;
     }
 
-    .download-area {
+    .result-area {
         margin-top: 20px;
         padding-top: 15px;
     }

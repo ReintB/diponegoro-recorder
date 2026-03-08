@@ -1,117 +1,176 @@
-let audioContext, processor, input, stream, mp3Encoder, analyser;
-let mp3Data = [];
-let timerInterval;
-let seconds = 0;
+let audioContext;
+let processor;
+let inputNode;
+let analyserNode;
+let microphoneStream;
+let mp3Encoder;
+let mp3DataChunks = [];
 
-const startBtn = document.getElementById('startBtn');
-const stopBtn = document.getElementById('stopBtn');
-const resetBtn = document.getElementById('resetBtn');
+let timerInterval;
+let recordingSeconds = 0; 
+
+const startButton = document.getElementById('startBtn');
+const stopButton = document.getElementById('stopBtn');
+const resetButton = document.getElementById('resetBtn');
 const statusText = document.getElementById('status');
 const timerDisplay = document.getElementById('timer');
-const volumeFill = document.getElementById('volumeFill');
+const volumeFillBar = document.getElementById('volumeFill');
 const resultArea = document.getElementById('resultArea');
-const audioPreview = document.getElementById('audioPreview');
+const audioPlayer = document.getElementById('audioPreview');
 const downloadLink = document.getElementById('downloadLink');
 
-// --- Fungsi Timer ---
-function runTimer() {
-    seconds = 0;
+function startTimer() {
+    recordingSeconds = 0;
     timerDisplay.innerText = "00:00";
+    
     timerInterval = setInterval(() => {
-        seconds++;
-        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-        const s = (seconds % 60).toString().padStart(2, '0');
-        timerDisplay.innerText = `${m}:${s}`;
+        recordingSeconds++;
+        
+        const minutes = Math.floor(recordingSeconds / 60);
+        const seconds = recordingSeconds % 60;
+        
+        const formattedMinutes = minutes.toString().padStart(2, '0');
+        const formattedSeconds = seconds.toString().padStart(2, '0');
+        
+        timerDisplay.innerText = `${formattedMinutes}:${formattedSeconds}`;
     }, 1000);
 }
 
-// --- Fungsi Monitoring Volume ---
-function monitorVolume() {
-    if (!analyser) return;
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-    analyser.getByteFrequencyData(dataArray);
-    const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-    const volume = Math.min(100, (average / 100) * 100);
-    volumeFill.style.width = volume + "%";
-    if (stream && stream.active) requestAnimationFrame(monitorVolume);
+function stopTimer() {
+    clearInterval(timerInterval);
 }
 
-// --- Event Handlers ---
-startBtn.onclick = async () => {
-    try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+function updateVolumeDisplay() {
+    if (!analyserNode) return;
+    
+    const frequencyData = new Uint8Array(analyserNode.frequencyBinCount);
+    analyserNode.getByteFrequencyData(frequencyData);
+    
+    const sum = frequencyData.reduce((total, value) => total + value, 0);
+    const averageVolume = sum / frequencyData.length;
+    
+    const volumePercentage = Math.min(100, (averageVolume / 100) * 100);
+    
+    volumeFillBar.style.width = volumePercentage + "%";
+    
+    if (microphoneStream && microphoneStream.active) {
+        requestAnimationFrame(updateVolumeDisplay);
+    }
+}
 
-        analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        input = audioContext.createMediaStreamSource(stream);
-        input.connect(analyser);
+function processAudioData(audioEvent) {
+    const audioData = audioEvent.inputBuffer.getChannelData(0);
+    
+    const audioDataInt16 = new Int16Array(audioData.length);
+    for (let i = 0; i < audioData.length; i++) {
+        const sample = audioData[i];
+        audioDataInt16[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+    }
+    
+    const mp3Buffer = mp3Encoder.encodeBuffer(audioDataInt16);
+    
+    if (mp3Buffer.length > 0) {
+        mp3DataChunks.push(mp3Buffer);
+    }
+}
+
+async function handleStartRecording() {
+    try {
+        microphoneStream = await navigator.mediaDevices.getUserMedia({ 
+            audio: true 
+        });
+        
+        audioContext = new (window.AudioContext || window.webkitAudioContext)({ 
+            sampleRate: 44100 
+        });
+
+        analyserNode = audioContext.createAnalyser();
+        analyserNode.fftSize = 256;
+        
+        inputNode = audioContext.createMediaStreamSource(microphoneStream);
+        inputNode.connect(analyserNode);
 
         mp3Encoder = new lamejs.Mp3Encoder(1, 44100, 128);
-        mp3Data = [];
+        mp3DataChunks = [];
 
         processor = audioContext.createScriptProcessor(4096, 1, 1);
-        processor.onaudioprocess = (e) => {
-            const left = e.inputBuffer.getChannelData(0);
-            const leftInt16 = new Int16Array(left.length);
-            for (let i = 0; i < left.length; i++) {
-                leftInt16[i] = left[i] < 0 ? left[i] * 0x8000 : left[i] * 0x7FFF;
-            }
-            const mp3buffer = mp3Encoder.encodeBuffer(leftInt16);
-            if (mp3buffer.length > 0) mp3Data.push(mp3buffer);
-        };
+        processor.onaudioprocess = processAudioData;
 
-        input.connect(processor);
+        inputNode.connect(processor);
         processor.connect(audioContext.destination);
 
-        // UI Update
-        runTimer();
-        monitorVolume();
-        toggleButtons('recording');
-    } catch (err) {
-        alert("Akses Mikrofon Ditolak!");
+        startTimer();
+        updateVolumeDisplay();
+        
+        updateUIState('recording');
+        
+    } catch (error) {
+        alert("Akses Mikrofon Ditolak! Pastikan Anda mengizinkan akses mikrofon.");
+        console.error('Error:', error);
     }
-};
+}
 
-stopBtn.onclick = () => {
-    clearInterval(timerInterval);
-    const lastBuffer = mp3Encoder.flush();
-    if (lastBuffer.length > 0) mp3Data.push(lastBuffer);
+function handleStopRecording() {
+    stopTimer();
+    
+    const finalBuffer = mp3Encoder.flush();
+    if (finalBuffer.length > 0) {
+        mp3DataChunks.push(finalBuffer);
+    }
 
-    const blob = new Blob(mp3Data, { type: 'audio/mp3' });
-    const url = URL.createObjectURL(blob);
+    const mp3Blob = new Blob(mp3DataChunks, { type: 'audio/mp3' });
+    
+    const audioURL = URL.createObjectURL(mp3Blob);
 
-    audioPreview.src = url;
-    downloadLink.href = url;
-    downloadLink.download = `Tugas_Speaking_${new Date().getTime()}.mp3`;
+    audioPlayer.src = audioURL;
+    
+    const timestamp = new Date().getTime();
+    downloadLink.href = audioURL;
+    downloadLink.download = `Tugas_Speaking_${timestamp}.mp3`;
 
-    stream.getTracks().forEach(track => track.stop());
+    microphoneStream.getTracks().forEach(track => track.stop());
+    
     processor.disconnect();
-    input.disconnect();
+    inputNode.disconnect();
 
-    toggleButtons('finished');
-};
+    updateUIState('finished');
+}
 
-resetBtn.onclick = () => {
-    toggleButtons('ready');
+function handleResetRecording() {
+    updateUIState('ready');
+    
     timerDisplay.innerText = "00:00";
-    volumeFill.style.width = "0%";
-    audioPreview.src = "";
-};
+    
+    volumeFillBar.style.width = "0%";
+    
+    audioPlayer.src = "";
+}
 
-function toggleButtons(state) {
+function updateUIState(state) {
     if (state === 'recording') {
-        startBtn.disabled = true; stopBtn.disabled = false; resetBtn.disabled = true;
+        startButton.disabled = true;
+        stopButton.disabled = false;
+        resetButton.disabled = true;
         statusText.innerText = "🔴 Merekam...";
         resultArea.style.display = 'none';
+        
     } else if (state === 'finished') {
-        startBtn.disabled = true; stopBtn.disabled = true; resetBtn.disabled = false;
+        startButton.disabled = true;
+        stopButton.disabled = true;
+        resetButton.disabled = false;
         statusText.innerText = "✅ Rekaman Tersedia";
         resultArea.style.display = 'block';
-        volumeFill.style.width = "0%";
+        volumeFillBar.style.width = "0%";
+        
     } else {
-        startBtn.disabled = false; stopBtn.disabled = true; resetBtn.disabled = true;
+        startButton.disabled = false;
+        stopButton.disabled = true;
+        resetButton.disabled = true;
         statusText.innerText = "Siap Merekam";
         resultArea.style.display = 'none';
     }
 }
+
+startButton.onclick = handleStartRecording;
+stopButton.onclick = handleStopRecording;
+resetButton.onclick = handleResetRecording;
